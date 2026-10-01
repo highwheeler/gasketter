@@ -1,0 +1,2214 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gasketteer</title>
+    <style>
+        :root {
+            --bg: #0b0f1a;
+            --panel: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --border: #334155;
+            --hover: #334155;
+            --danger: #f43f5e;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Top Menu */
+        #top-menu {
+            background: var(--panel);
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            height: 35px;
+            align-items: center;
+            padding: 0 10px;
+            z-index: 300;
+            flex-shrink: 0;
+        }
+
+        .menu-item {
+            position: relative;
+            padding: 0 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .menu-item:hover {
+            background: var(--hover);
+        }
+
+        .dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            min-width: 180px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-item:hover .dropdown {
+            display: block;
+        }
+
+        .dropdown button {
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .dropdown button:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .dropdown hr {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 0;
+        }
+
+        .dropdown label {
+            display: flex;
+            padding: 8px 15px;
+            font-size: 0.8rem;
+            gap: 8px;
+            cursor: pointer;
+            align-items: center;
+        }
+
+        /* Floating UI */
+        #toolbar {
+            position: absolute;
+            left: 15px;
+            top: 50px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            padding: 5px;
+            gap: 5px;
+            z-index: 200;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        #toolbar button {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #toolbar button:hover {
+            background: var(--hover);
+        }
+
+        #toolbar button.active {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .spacer {
+            height: 1px;
+            background: var(--border);
+            margin: 2px 5px;
+        }
+
+        #properties-panel {
+            position: absolute;
+            top: 50px;
+            right: 15px;
+            background: var(--panel);
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 160px;
+            z-index: 200;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* Context Menu */
+        #context-menu {
+            position: fixed;
+            display: none;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            z-index: 1000;
+            min-width: 140px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            padding: 5px 0;
+        }
+
+        #context-menu button {
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        #context-menu button:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            background: #0b1120;
+            overflow: hidden;
+
+        }
+
+        canvas {
+            display: block;
+            outline: none;
+        }
+
+        #lowerstatus {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 6px 15px;
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid var(--border);
+            pointer-events: none;
+            box-sizing: border-box;
+            font-family: monospace;
+        }
+
+        kbd {
+            background: #475569;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.65rem;
+        }
+
+        @media print {
+
+            /* 1. Hide every UI panel and menu */
+            #top-menu,
+            #panel,
+            #zoom-controls,
+            #bottom-bar,
+            #toolbar,
+            #menu-item,
+            #properties-panel,
+            #canvas-container,
+            #lowerstatus,
+            #context-menu {
+                display: none !important;
+            }
+
+            canvas {
+                background-image: none !important;
+                background: white !important;
+                /* Allow the JS to set the exact size needed for 1:1 scale */
+                width: auto !important;
+                height: auto !important;
+                max-width: none !important;
+                max-height: none !important;
+                display: block;
+                margin: 0;
+                padding: 0;
+            }
+
+
+            /* 3. Ensure the container doesn't clip the design */
+            #main-container,
+            #canvas-container {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+
+            body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
+
+        /* Zoom Slider Styles */
+        #zoom-control {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .zoom-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #zoom-reset {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Panning Scrollbars */
+        #scrollbar-v,
+        #scrollbar-h {
+            position: absolute;
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 4px;
+            pointer-events: auto;
+            z-index: 110;
+            cursor: pointer;
+        }
+
+        #scrollbar-v {
+            right: 2px;
+            width: 8px;
+            height: 100px;
+            top: 0;
+        }
+
+        #scrollbar-h {
+            bottom: 35px;
+            height: 8px;
+            width: 100px;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="top-menu">
+        <div class="menu-item">File
+            <div class="dropdown">
+                <button onclick="newProject();">New</button>
+                <button onclick="document.getElementById('imgInput').click()">Load Background Image</button>
+                <button onclick="loadProject()">Open Project (.json)</button>
+                <hr>
+                <button onclick="saveProject()">Save Project</button>
+                <button onclick="saveProjectAs()">Save As...</button>
+                <button onclick="exportPNG()">Export PNG</button>
+                <button onclick="exportGCode()">Export G-code (.nc)</button>
+                <button onclick="exportHPGL()">Export for USCutter (.plt)</button>
+                <button onclick="exportSVG()">Export SVG</button>
+                <button onclick="printDesign()">Print Design <kbd>Ctrl+P</kbd></button>
+            </div>
+        </div>
+        <div class="menu-item">Edit
+            <div class="dropdown">
+                <button onclick="undo()">Undo <kbd>Ctrl+Z</kbd></button>
+                <button onclick="copy()">Copy <kbd>Ctrl+C</kbd></button>
+                <button onclick="paste()">Paste <kbd>Ctrl+V</kbd></button>
+                <hr>
+                <button onclick="deleteSelected()" style="color:var(--danger)">Delete <kbd>Del</kbd></button>
+            </div>
+        </div>
+        <div class="menu-item">View
+            <div class="dropdown">
+                <label><input type="checkbox" id="snapGrid" checked> Snap to Grid</label>
+                <label><input type="checkbox" id="showDims" checked onchange="draw()"> Show Dimensions</label>
+            </div>
+        </div>
+    </div>
+
+    <div id="toolbar">
+        <button id="tool-select" title="Select (S)" onclick="setTool('select')" class="active">⬀</button>
+        <div class="spacer"></div>
+        <button id="tool-line" title="Line (L)" onclick="setTool('line')">╱</button>
+        <button id="tool-arc" title="Arc (A)" onclick="setTool('arc')">⌒</button>
+        <button id="tool-circle" title="Circle (C)" onclick="setTool('circle')">○</button>
+        <button id="tool-measure" title="Measure (M)" onclick="setTool('measure')">📏</button>
+        <div class="spacer"></div>
+        <button id="tool-scaleship" title="Scale Reference" onclick="setTool('scaleship')">⚖</button>
+        <button onclick="smoothSelected()">Smooth Path</button>
+    </div>
+
+    <div id="properties-panel">
+        <label>Circle Diameter</label>
+        <input type="text" id="circleDiameterInput" value="0.25">
+        <div style="margin-top:12px">
+            <label>Image Brightness</label>
+            <input type="range" id="imgBrightness" min="0" max="2" step="0.1" value="1" oninput="draw()">
+        </div>
+        <hr>
+        <div style="padding: 5px 10px;">
+            <label>Grid Units</label>
+            <select id="unitSelect" onchange="convertUnits(this.value)">
+                <option value="25">Metric</option>
+                <option value="32">Inches</option>
+            </select>
+        </div>
+        <div style="padding: 5px 10px;">
+            <label>Global Scale</label>
+            <input type="number" id="scaleInput" step="0.0001" value="1.0" onchange="adjustScale(this.value)">
+        </div>
+        <div id="zoom-control">
+            <label>Zoom Level</label>
+            <div class="zoom-row">
+                <input type="range" id="zoomSlider" min="0.1" max="10" step="0.1" value="1"
+                    oninput="updateZoomFromSlider(this.value)">
+            </div>
+            <button id="zoom-reset" onclick="resetZoom()">1:1</button>
+
+        </div>
+    </div>
+
+    <div id="context-menu">
+        <div id="point-actions" style="display:none">
+            <button onclick="removePointAction(); hideContext();" style="color:var(--danger)">Remove Point</button>
+            <hr style="border:0; border-top:1px solid var(--border); margin:0;">
+        </div>
+        <div id="add-point-actions" style="display:none">
+            <button onclick="addPointHere(); hideContext();">Add Point Here</button>
+            <hr style="border:0; border-top:1px solid var(--border); margin:0;">
+        </div>
+
+
+        <button onclick="copy(); hideContext();">Copy</button>
+        <button onclick="paste(); hideContext();">Paste Here</button>
+        <hr style="border:0; border-top:1px solid var(--border); margin:0;">
+        <button onclick="deleteSelected(); hideContext();" style="color:var(--danger)">Delete Object</button>
+        <button onclick="hideContext()">Cancel</button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="mainCanvas" tabindex="1"></canvas>
+        <div id="scrollbar-v"></div>
+        <div id="scrollbar-h"></div>
+    </div>
+    <div id="lowerstatus">
+        <span id="coordDisplay">X: 0.00 Y: 0.00</span>
+        <span id="modeDisplay">MODE: SELECT</span>
+    </div>
+
+    <input type="file" id="imgInput" style="display:none" accept="image/*" onchange="loadBackgroundImage(event)">
+    <input type="file" id="fileInput" style="display:none" onchange="loadProject(event)">
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const contextMenu = document.getElementById('context-menu');
+        const pointActions = document.getElementById('point-actions');
+        const addPointActions = document.getElementById('add-point-actions');
+
+        let objects = [];
+        let history = [];
+        let tool = 'select';
+        let cursav = canvas.style.cursor;
+        let activeObject = null;
+        let clipboard = null;
+        let camera = { x: 0, y: 0, zoom: 1 };
+        let isPanning = false;
+        let lastMouse = { x: 0, y: 0, rawX: 0, rawY: 0 };
+        let dragTarget = null;
+        let isMovingSelection = false;
+        let selectionBox = null;
+        let bgImage = null;
+        let bgImageData = null;
+        let scaleRefPoints = [];
+        let contextPoint = null; // Stores target for point removal
+        let globalScale = 1.0; // 1.0 means 1:1 with the default grid (25px or 32px)
+        let isPrinting = false;
+        let contextSeg = null;
+        let clickedMeasurement = null;
+        let measurements = [];
+        let activeMeasure = null; // Used while dragging a new one
+        let dragMeasure = null;
+        let dragPointType = null;
+
+        let currentUnitValue = 25; // Tracks previous state (25 for Metric, 32 for Inches)
+        let isDraggingBar = null;
+
+        const vBar = document.getElementById('scrollbar-v');
+        const hBar = document.getElementById('scrollbar-h');
+
+        function convertUnits(newVal) {
+            newVal = parseInt(newVal);
+            if (newVal === currentUnitValue) return;
+            // 1. Physical conversion constants
+            const mmToInches = 1 / 25.4;
+            const inchesToMm = 25.4;
+
+            // 2. Determine conversion direction
+            let conversionFactor = (newVal === 32) ? mmToInches : inchesToMm;
+
+            // 3. Grid density adjustment
+            // Since the divisor in your formula changes (e.g., 25 becomes 32), 
+            // we must adjust the numerator (globalScale) to compensate.
+            const gridRatio = newVal / currentUnitValue;
+            console.log(`Conversion Factor: ${conversionFactor}, Grid Ratio: ${gridRatio}`);
+
+            // Final corrected globalScale update
+            globalScale = globalScale * conversionFactor * gridRatio;
+            document.getElementById('scaleInput').value = globalScale.toFixed(4);
+
+            // 4. Update state and refresh
+            currentUnitValue = newVal;
+            setTool(tool); // Refresh tool to update cursor
+        }
+        function getRealValue(pixelDist) {
+            const unitSize = parseInt(document.getElementById('unitSelect').value);
+            // Real distance = (Pixels / Pixels-per-Unit) * Calibration-Factor
+            return (pixelDist / unitSize) * globalScale;
+        }
+
+        function newProject() {
+            document.getElementById('imgBrightness').value = 1;
+            camera = { x: 0, y: 0, zoom: 1 };
+            globalScale = 1.0;
+            document.getElementById('scaleInput').value = "1.0000";
+            objects = [];
+            bgImage = null;
+            bgImageData = null;
+            activeObject = null;
+            history = [];
+            scaleRefPoints = [];
+            measurements = [];
+
+            saveState();
+            draw();
+        }
+
+        function init() {
+            window.addEventListener('resize', resize);
+            resize();
+            saveState();
+            requestAnimationFrame(draw);
+            newProject();
+            convertUnits(document.getElementById('unitSelect').value);
+            setTool(tool); // Refresh tool to update cursor
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight - 35;
+            draw();
+        }
+
+        function saveState() {
+            if (history.length > 50) history.shift();
+            history.push(JSON.stringify({ objects, bgImageData, brightness: document.getElementById('imgBrightness').value }));
+        }
+
+        function undo() {
+            if (activeObject) { activeObject.points.pop(); draw(); return; }
+            if (history.length > 1) {
+                history.pop();
+                const state = JSON.parse(history[history.length - 1]);
+                objects = state.objects;
+                if (state.bgImageData) restoreImage(state.bgImageData);
+                document.getElementById('imgBrightness').value = state.brightness || 1;
+                draw();
+            }
+        }
+
+        function toWorld(sX, sY) {
+            return { x: (sX - camera.x) / camera.zoom, y: (sY - camera.y) / camera.zoom };
+        }
+
+        function loadBackgroundImage(e) {
+            const reader = new FileReader();
+            reader.onload = (event) => { bgImageData = event.target.result; restoreImage(bgImageData); };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function restoreImage(data) {
+            const img = new Image();
+            img.onload = () => { bgImage = img; draw(); };
+            img.src = data;
+        }
+
+        function getArcParams(p1, p2, p3) {
+            const x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y, x3 = p3.x, y3 = p3.y;
+            const D = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
+            if (Math.abs(D) < 0.01) return null;
+            const cX = ((x1 ** 2 + y1 ** 2) * (y2 - y3) + (x2 ** 2 + y2 ** 2) * (y3 - y1) + (x3 ** 2 + y3 ** 2) * (y1 - y2)) / D;
+            const cY = ((x1 ** 2 + y1 ** 2) * (x3 - x2) + (x2 ** 2 + y2 ** 2) * (x1 - x3) + (x3 ** 2 + y3 ** 2) * (x2 - x1)) / D;
+            const r = Math.hypot(x1 - cX, y1 - cY);
+            const sA = Math.atan2(y1 - cY, x1 - cX);
+            const mA = Math.atan2(y2 - cY, x2 - cX);
+            const eA = Math.atan2(y3 - cY, x3 - cX);
+            let ccw = !((sA < mA && mA < eA) || (sA > mA && mA > eA));
+            if (sA > eA) ccw = !ccw;
+            return { cX, cY, r, sA, eA, ccw };
+        }
+
+        function findSegmentAt(world) {
+            const threshold = 10 / camera.zoom;
+            for (let i = 0; i < objects.length; i++) {
+                const obj = objects[i];
+                if (obj.type === 'circle' || obj.points.length < 2) continue;
+                for (let j = 0; j < obj.points.length - 1; j++) {
+                    const p1 = obj.points[j];
+                    const p2 = obj.points[j + 1];
+                    const L2 = (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2;
+                    if (L2 === 0) continue;
+                    let t = ((world.x - p1.x) * (p2.x - p1.x) + (world.y - p1.y) * (p2.y - p1.y)) / L2;
+                    t = Math.max(0, Math.min(1, t));
+                    const dist = Math.hypot(world.x - (p1.x + t * (p2.x - p1.x)), world.y - (p1.y + t * (p2.y - p1.y)));
+                    if (dist < threshold) return { objIdx: i, insertAfter: j };
+                }
+                if (obj.isClosed) {
+                    const p1 = obj.points[obj.points.length - 1];
+                    const p2 = obj.points[0];
+                    const L2 = (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2;
+                    if (L2 !== 0) {
+                        let t = ((world.x - p1.x) * (p2.x - p1.x) + (world.y - p1.y) * (p2.y - p1.y)) / L2;
+                        t = Math.max(0, Math.min(1, t));
+                        const dist = Math.hypot(world.x - (p1.x + t * (p2.x - p1.x)), world.y - (p1.y + t * (p2.y - p1.y)));
+                        if (dist < threshold) return { objIdx: i, insertAfter: obj.points.length - 1 };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function removePointAction() {
+            if (contextPoint) {
+                saveState();
+                const obj = objects[contextPoint.objIdx];
+                if (obj.points.length > 2) {
+                    obj.points.splice(contextPoint.ptIdx, 1);
+                } else {
+                    objects.splice(contextPoint.objIdx, 1);
+                }
+                draw();
+            }
+        }
+
+        function addPointHere() {
+            if (contextSeg) {
+                saveState();
+                const obj = objects[contextSeg.objIdx];
+
+                obj.points.splice(contextSeg.insertAfter + 1, 0, { x: lastMouse.x, y: lastMouse.y });
+                draw();
+
+            }
+        }
+
+
+        function updateZoomFromSlider(val) {
+            const newZoom = parseFloat(val);
+            // Zoom relative to the center of the screen
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            const worldPos = toWorld(centerX, centerY);
+            camera.zoom = newZoom;
+
+            camera.x = centerX - worldPos.x * camera.zoom;
+            camera.y = centerY - worldPos.y * camera.zoom;
+
+            draw();
+        }
+
+        function resetZoom() {
+            camera.zoom = 1;
+            camera.x = 0;
+            camera.y = 0;
+            document.getElementById('zoomSlider').value = 1;
+            // Optionally center the camera or keep current position
+            draw();
+        }
+
+        function updateScrollbars() {
+            const vBar = document.getElementById('scrollbar-v');
+            const hBar = document.getElementById('scrollbar-h');
+
+            // Calculate "viewable" range based on zoom
+            // This is a simplified visual representation of camera offset
+            const zoomFactor = 1 / camera.zoom;
+
+            // Vertical Bar
+            const vSize = Math.max(20, (canvas.height * zoomFactor) / 2);
+            vBar.style.height = vSize + 'px';
+            vBar.style.top = ((canvas.height / 2 - camera.y / camera.zoom) % canvas.height) + 'px';
+
+            // Horizontal Bar
+            const hSize = Math.max(20, (canvas.width * zoomFactor) / 2);
+            hBar.style.width = hSize + 'px';
+            hBar.style.left = ((canvas.width / 2 - camera.x / camera.zoom) % canvas.width) + 'px';
+        }
+
+
+        function draw() {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
+            // 1. Draw Background Image
+            if (bgImage) {
+                ctx.save();
+                ctx.filter = `brightness(${document.getElementById('imgBrightness').value})`;
+                ctx.translate(camera.x, camera.y);
+                ctx.scale(camera.zoom, camera.zoom);
+                ctx.drawImage(bgImage, 0, 0);
+                ctx.restore();
+            }
+
+            // 2. Draw Grid
+            if (!isPrinting) {
+                const unitSize = parseInt(document.getElementById('unitSelect').value);
+                const step = unitSize * camera.zoom / globalScale;
+                ctx.beginPath();
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 1;
+                for (let x = camera.x % step; x < canvas.width; x += step) {
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                }
+                for (let y = camera.y % step; y < canvas.height; y += step) {
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                }
+                ctx.stroke();
+                drawMeasurements();
+            }
+
+
+            // 3. Draw Objects (Lines, Arcs, etc.) - START TRANSFORM
+            ctx.save();
+            ctx.translate(camera.x, camera.y);
+            ctx.scale(camera.zoom, camera.zoom);
+
+            objects.forEach(obj => renderObject(obj));
+            if (!isPrinting) {
+                // --- FIX: Draw Scale Reference Points INSIDE the transform ---
+                scaleRefPoints.forEach(p => {
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.beginPath();
+                    // Note: dividing by camera.zoom keeps the dot size consistent on screen
+                    ctx.arc(p.x, p.y, 5 / camera.zoom, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Draw Live Preview (Ghost lines)
+                if (activeObject && activeObject.points.length > 0) {
+                    renderObject(activeObject, true);
+
+                    const lastPt = activeObject.points[activeObject.points.length - 1];
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.setLineDash([5, 5]);
+                    // lastMouse contains world coordinates, so we can draw directly in this transformed context
+                    ctx.moveTo(lastPt.x, lastPt.y);
+                    ctx.lineTo(lastMouse.x, lastMouse.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    renderLiveDimension(lastPt, lastMouse);
+                }
+                /*
+                                // Draw "Add Point" preview
+                                if (tool === 'addpoint' && !isPanning) {
+                                    const seg = findSegmentAt(lastMouse); // findSegmentAt uses world coords
+                                    if (seg) {
+                                        ctx.beginPath();
+                                        ctx.arc(lastMouse.x, lastMouse.y, 4 / camera.zoom, 0, Math.PI * 2);
+                                        ctx.fillStyle = '#38bdf8';
+                                        ctx.fill();
+                                    }
+                                }
+                                    */
+            }
+            ctx.restore(); // --- END TRANSFORM ---
+
+            // 4. Draw UI Elements (Selection Box, Tooltips) - Screen Coordinates
+            if (selectionBox) {
+                ctx.strokeStyle = '#38bdf8';
+                ctx.setLineDash([5, 5]);
+                // Convert world coords back to screen for the selection box (or draw it inside the transform without conversion)
+                const sX1 = selectionBox.x1 * camera.zoom + camera.x;
+                const sY1 = selectionBox.y1 * camera.zoom + camera.y;
+                const sX2 = selectionBox.x2 * camera.zoom + camera.x;
+                const sY2 = selectionBox.y2 * camera.zoom + camera.y;
+                ctx.strokeRect(sX1, sY1, sX2 - sX1, sY2 - sY1);
+                ctx.setLineDash([]);
+            }
+
+            if (['line', 'arc', 'circle', 'scaleship'].includes(tool) && !isPanning) {
+                ctx.font = 'bold 12px Inter, sans-serif';
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillText(tool.toUpperCase(), lastMouse.rawX + 15, lastMouse.rawY - 5);
+            }
+            document.getElementById('zoomSlider').value = camera.zoom;
+            updateScrollbars();
+        }
+
+        function drawMeasurements() {
+
+            measurements.forEach((m, index) => {
+                drawAMeausrment(m);
+            });
+            if (activeMeasure) {
+
+                drawAMeausrment(activeMeasure);
+            }
+        }
+        function drawAMeausrment(m) {
+            const start = m.start;
+            const end = m.end;
+            if (start.x === end.x && start.y === end.y) return;
+
+            const angle = Math.atan2(end.y - start.y, end.x - start.x);
+            const perp = angle + Math.PI / 2;
+            const capSize = 10 / camera.zoom;
+
+            ctx.save();
+            ctx.translate(camera.x, camera.y);
+            ctx.scale(camera.zoom, camera.zoom);
+            ctx.strokeStyle = (m.selected) ? '#fbbf24' : '#4ade80';
+            ctx.lineWidth = 2 / camera.zoom;
+
+            // 1. Draw Main Dimension Line
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+
+            // 2. Draw Perpendicular End Caps
+            const drawCap = (p) => {
+                ctx.beginPath();
+                ctx.moveTo(p.x + Math.cos(perp) * capSize, p.y + Math.sin(perp) * capSize);
+                ctx.lineTo(p.x - Math.cos(perp) * capSize, p.y - Math.sin(perp) * capSize);
+                ctx.stroke();
+            };
+            drawCap(start);
+            drawCap(end);
+
+            // 3. Draw Edit Handles if selected
+            if (m.selected) {
+                ctx.fillStyle = '#fff';
+                const s = 8 / camera.zoom;
+                ctx.fillRect(start.x - s / 2, start.y - s / 2, s, s);
+                ctx.fillRect(end.x - s / 2, end.y - s / 2, s, s);
+            }
+
+            // 4. Calculate Distance in Units (mm or in)
+            // Inside drawAMeausrment(m)
+            const rawDist = Math.hypot(end.x - start.x, end.y - start.y);
+            const dist = getRealValue(rawDist);
+
+
+
+            const unitSize = parseInt(document.getElementById('unitSelect').value);
+            //const dist = (Math.hypot(end.x - start.x, end.y - start.y) / unitSize) * globalScale;
+            const unitLabel = unitSize === 25 ? "mm" : "in";
+
+            const midX = (start.x + end.x) / 2;
+            const midY = (start.y + end.y) / 2;
+
+            ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
+            ctx.font = `bold ${14 / camera.zoom}px monospace`;
+            const txt = `${dist.toFixed(2)}${unitLabel}`;
+            const tw = ctx.measureText(txt).width;
+
+            ctx.fillRect(midX - tw / 2 - 4, midY - 10 / camera.zoom, tw + 8, 20 / camera.zoom);
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.textAlign = "center";
+            ctx.fillText(txt, midX, midY + 5 / camera.zoom);
+            ctx.restore();
+        }
+        /**
+         * Calculates the shortest distance from a point (p) to a line segment (v-w)
+         */
+        function distToSegment(p, v, w) {
+            const l2 = Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2);
+            if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+            let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(
+                p.x - (v.x + t * (w.x - v.x)),
+                p.y - (v.y + t * (w.y - v.y))
+            );
+        }
+
+        function renderLiveDimension(p1, p2) {
+            if (!document.getElementById('showDims').checked) return;
+
+            // Replace the unit calculation:
+            const u = parseInt(document.getElementById('unitSelect').value) / globalScale;
+            const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+            const val = (dist / u).toFixed(2); // Now shows the calibrated real-world value
+            // ;
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+            // Reference Tick Marks
+            const tickLen = 8 / camera.zoom;
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 1 / camera.zoom;
+
+            [p1, p2].forEach(p => {
+                ctx.beginPath();
+                ctx.moveTo(p.x - Math.sin(angle) * tickLen, p.y + Math.cos(angle) * tickLen);
+                ctx.lineTo(p.x + Math.sin(angle) * tickLen, p.y - Math.cos(angle) * tickLen);
+                ctx.stroke();
+            });
+
+            // Dimension Text with Background Mask
+            ctx.save();
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+
+            const txt = val.toString();
+            ctx.font = `bold ${14 / camera.zoom}px monospace`;
+            const tw = ctx.measureText(txt).width;
+            const th = 14 / camera.zoom;
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+            ctx.fillRect(-tw / 2 - 2, -th - 2, tw + 4, th + 4);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.textAlign = 'center';
+            ctx.fillText(txt, 0, -5 / camera.zoom);
+            ctx.restore();
+        }
+
+        function renderObject(obj, isTemp = false) {
+            const isSelected = obj.selected && !isTemp;
+            ctx.beginPath();
+            if (obj.type === 'circle') {
+                ctx.arc(obj.points[0].x, obj.points[0].y, obj.radius, 0, Math.PI * 2);
+            } else {
+                if (!obj.points.length) return;
+                ctx.moveTo(obj.points[0].x, obj.points[0].y);
+                for (let i = 1; i < obj.points.length; i++) {
+                    const p = obj.points[i];
+                    if (p.type === 'arc' && p.mid) {
+                        const a = getArcParams(obj.points[i - 1], p.mid, p);
+                        if (a) ctx.arc(a.cX, a.cY, a.r, a.sA, a.eA, a.ccw);
+                        else ctx.lineTo(p.x, p.y);
+                    } else ctx.lineTo(p.x, p.y);
+                }
+                if (obj.isClosed) ctx.closePath();
+            }
+            ctx.lineWidth = 2 / camera.zoom;
+            //           ctx.strokeStyle = isTemp ? '#38bdf8' : (isSelected ? '#fbbf24' : '#64748b');
+            // FORCE BLACK OUTLINES WHEN PRINTING
+            if (isPrinting) {
+                ctx.strokeStyle = '#000000'; // Pure black for printing
+            } else {
+                ctx.strokeStyle = isTemp ? '#38bdf8' : (isSelected ? '#fbbf24' : '#ffffff');
+            }
+
+
+            //          ctx.strokeStyle = isTemp ? '#38bdf8' : (isSelected ? '#fbbf24' : '#ffffff');
+            ctx.stroke();
+            if (!isPrinting) {
+                if (obj.isClosed || obj.type === 'circle') {
+                    ctx.fillStyle = isSelected ? 'rgba(251, 191, 36, 0.1)' : 'rgba(100, 116, 139, 0.05)';
+                    ctx.fill();
+                }
+                if (isSelected || isTemp) {
+                    const s = 10 / camera.zoom;
+                    obj.points.forEach((p, i) => {
+                        ctx.fillStyle = (i === 0) ? '#10b981' : '#fff';
+                        ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+                        if (p.mid) { ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(p.mid.x, p.mid.y, s / 1.5, 0, Math.PI * 2); ctx.fill(); }
+                    });
+                    if (obj.type === 'circle') {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(obj.points[0].x + obj.radius - s / 2, obj.points[0].y - s / 2, s, s);
+                    }
+                }
+                if (document.getElementById('showDims').checked && !isTemp) {
+                    const u = parseInt(document.getElementById('unitSelect').value) / globalScale;
+                    ctx.font = `${15 / camera.zoom}px monospace`; ctx.fillStyle = '#94a3b8';
+                    if (obj.type === 'circle') {
+                        ctx.fillText(`Ø ${(obj.radius * 2 / u).toFixed(2)}`, obj.points[0].x, obj.points[0].y - obj.radius - 5 / camera.zoom);
+                    } else {
+                        for (let i = 1; i < obj.points.length; i++) {
+                            const d = Math.hypot(obj.points[i].x - obj.points[i - 1].x, obj.points[i].y - obj.points[i - 1].y) / u;
+                            if (d > 0.1) ctx.fillText(d.toFixed(2), (obj.points[i].x + obj.points[i - 1].x) / 2, (obj.points[i].y + obj.points[i - 1].y) / 2 - 10 / camera.zoom);
+                        }
+                        const d = Math.hypot(obj.points[obj.points.length - 1].x - obj.points[0].x, obj.points[obj.points.length - 1].y - obj.points[0].y) / u;
+                        if (d > 0.1) ctx.fillText(d.toFixed(2), (obj.points[obj.points.length - 1].x + obj.points[0].x) / 2, (obj.points[obj.points.length - 1].y + obj.points[0].y) / 2 - 10 / camera.zoom);
+                    }
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            hideContext();
+            if (e.button === 2) return;
+            const rawX = e.clientX, rawY = e.clientY - 35;
+            const world = toWorld(rawX, rawY);
+            let snapPoint = { ...world };
+
+
+            if (tool === 'select' || tool === 'measure') {
+                for (let m of measurements) {
+                    if (m.selected) {
+                        const handleRadius = 15 / camera.zoom;
+                        if (Math.hypot(lastMouse.x - m.start.x, lastMouse.y - m.start.y) < handleRadius) {
+                            dragMeasure = m;
+                            dragPointType = 'start';
+                            return;
+                        }
+                        if (Math.hypot(lastMouse.x - m.end.x, lastMouse.y - m.end.y) < handleRadius) {
+                            dragMeasure = m;
+                            dragPointType = 'end';
+                            return;
+                        }
+                    }
+                }
+            }
+
+
+            if (document.getElementById('snapGrid').checked) {
+                const g = parseInt(document.getElementById('unitSelect').value) / globalScale;
+                snapPoint.x = Math.round(snapPoint.x / g) * g;
+                snapPoint.y = Math.round(snapPoint.y / g) * g;
+            }
+            lastMouse = { ...snapPoint, rawX, rawY };
+            if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+                cursav = canvas.style.cursor;
+                canvas.style.cursor = 'grabbing';
+                isPanning = true;
+                return;
+            }
+            // Check if clicking near an existing measurement to select it
+            clickedMeasurement = measurements.find(m => {
+                const d = distToSegment(lastMouse, m.start, m.end);
+                //      console.log("Distance to measurement:", d);
+                return d < 10 / camera.zoom;
+            });
+
+            if (clickedMeasurement) {
+
+                measurements.forEach(m => m.selected = false);
+                clickedMeasurement.selected = true;
+            } else {
+                measurements.forEach(m => m.selected = false);
+            }
+            if (tool === 'measure') {
+
+
+                if (activeMeasure) {
+                    // Finalize the active measurement
+                    activeMeasure.end = { x: lastMouse.x, y: lastMouse.y };
+                    activeMeasure.selected = false;
+
+                    measurements.push(activeMeasure);
+                    activeMeasure = null;
+                } else {
+                    // Start a new measurement
+                    activeMeasure = { start: lastMouse, end: lastMouse, selected: false };
+                    //measurements.push(activeMeasure);
+                }
+                return;
+            }
+
+            if (tool === 'scaleship') {
+                // 1. Capture the raw world coordinate (ignore grid snap for calibration)
+                scaleRefPoints.push({ x: world.x, y: world.y });
+
+                if (scaleRefPoints.length === 2) {
+                    const p1 = scaleRefPoints[0];
+                    const p2 = scaleRefPoints[1];
+
+                    // 2. Calculate the distance in pixels currently measured on the screen
+                    const distPx = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+
+                    if (distPx > 0) {
+                        const unitType = document.getElementById('unitSelect').value === "25" ? "mm" : "inches";
+                        const realDistInput = prompt(`The line you drew is ${distPx.toFixed(2)}px.\nHow many ${unitType} should this line be?`);
+
+                        if (realDistInput && !isNaN(realDistInput)) {
+                            // 3. Convert real-world distance to target pixel count based on current grid settings
+                            const unitSize = parseInt(document.getElementById('unitSelect').value) / globalScale;
+                            const targetPx = parseFloat(realDistInput) * unitSize;
+
+                            // 4. Calculate the Final Scaling Factor
+                            const factor = targetPx / distPx;
+
+                            // 5. Apply scaling centered on the first click point
+                            scaleAll(factor, p1);
+                            alert(`Scaled drawing by ${factor.toFixed(4)}x to match ${realDistInput}${unitType}.`);
+                        }
+                    }
+
+                    // Reset tool state
+                    scaleRefPoints = [];
+                    setTool('select');
+                }
+                draw();
+                return;
+            }
+            const h = findHandle(world);
+            if (h) { saveState(); dragTarget = h; return; }
+
+            if (tool === 'select') {
+                const hit = findObjectAt(rawX, rawY);
+                if (hit) { if (!e.ctrlKey && !hit.selected) objects.forEach(o => o.selected = false); hit.selected = true; isMovingSelection = true; saveState(); }
+                else { objects.forEach(o => o.selected = false); selectionBox = { x1: world.x, y1: world.y, x2: world.x, y2: world.y }; }
+            } else if (tool === 'circle') {
+                saveState();
+                const dVal = document.getElementById("circleDiameterInput").value;
+                if (dVal && !isNaN(dVal)) {
+                    objects.push({ type: 'circle', points: [{ x: snapPoint.x, y: snapPoint.y }], radius: (parseFloat(dVal) * parseInt(document.getElementById('unitSelect').value)) / 2 / globalScale, selected: false });
+                    //      setTool('select');
+                } else { activeObject = { type: 'circle', points: [{ x: snapPoint.x, y: snapPoint.y }], radius: 0 }; }
+            } else {
+
+                if (!activeObject) activeObject = { points: [], isClosed: false };
+                const p = { ...snapPoint, type: tool };
+
+                if (activeObject.points.length > 0 && activeObject.points[activeObject.points.length - 1].x === p.x && activeObject.points[activeObject.points.length - 1].y === p.y) {
+                    // Prevent adding duplicate consecutive points 
+                    return;
+                }
+                saveState();
+                if (tool === 'arc' && activeObject.points.length > 0) {
+                    const prev = activeObject.points[activeObject.points.length - 1];
+                    p.mid = { x: (prev.x + p.x) / 2 + 5, y: (prev.y + p.y) / 2 - 20 / camera.zoom };
+                }
+
+                if (activeObject.points.length > 2 && Math.hypot(activeObject.points[0].x - snapPoint.x, activeObject.points[0].y - snapPoint.y) < 15 / camera.zoom) {
+                    activeObject.isClosed = true;
+                    if (tool === 'arc') {
+                        p.x = activeObject.points[0].x;
+                        p.y = activeObject.points[0].y;
+                        activeObject.points.push(p);
+                        const asav = activeObject.points[0].type;
+
+                        // activeObject.points.shift();
+
+
+
+                    }
+                    objects.push(activeObject);
+                    console.log(activeObject);
+                    activeObject = null;
+                    setTool('select');
+                } else {
+                    activeObject.points.push(p);
+                    if (activeObject.points.length > 1) setTool('line');
+                }
+
+            }
+            draw();
+        });
+
+        // Vertical Scrollbar Dragging
+        vBar.addEventListener('mousedown', (e) => {
+            isDraggingBar = 'v';
+            e.stopPropagation(); // Prevent canvas from starting a selection box
+        });
+
+        // Horizontal Scrollbar Dragging
+        hBar.addEventListener('mousedown', (e) => {
+            isDraggingBar = 'h';
+            e.stopPropagation();
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const rawX = e.clientX, rawY = e.clientY - 35;
+            // Calculate movement in raw screen pixels
+            const movementX = rawX - lastMouse.rawX;
+            const movementY = rawY - lastMouse.rawY;
+
+            if (isDraggingBar && isDraggingBar === 'v') {
+                // Move the camera Y based on vertical mouse movement
+                // We invert the movement because moving the bar down moves the camera 'up'
+                camera.y -= e.movementY * (1 / camera.zoom) * 2;
+                draw();
+                return;
+            } else if (isDraggingBar && isDraggingBar === 'h') {
+                camera.x -= e.movementX * (1 / camera.zoom) * 2;
+                draw();
+                return;
+            }
+
+            if (dragMeasure) {
+                if (dragPointType === 'start') dragMeasure.start = { ...lastMouse };
+                else dragMeasure.end = { ...lastMouse };
+                draw();
+            }
+
+            if (activeMeasure) {
+                const pos = toWorld(rawX, rawY);
+                activeMeasure.end = pos;
+                draw();
+                return;
+            }
+
+            if (isPanning) {
+                // Move camera by the exact amount the mouse moved on screen
+                camera.x += movementX;
+                camera.y += movementY;
+                canvas.style.cursor = 'grabbing';
+            }
+
+
+            const world = toWorld(rawX, rawY);
+            let currentPos = { ...world };
+            if (document.getElementById('snapGrid').checked) {
+                const g = parseInt(document.getElementById('unitSelect').value) / globalScale;
+                currentPos.x = Math.round(currentPos.x / g) * g; currentPos.y = Math.round(currentPos.y / g) * g;
+            }
+            const dx = currentPos.x - lastMouse.x, dy = currentPos.y - lastMouse.y;
+
+            if (activeObject && activeObject.type === 'circle') { activeObject.radius = Math.hypot(currentPos.x - activeObject.points[0].x, currentPos.y - activeObject.points[0].y); }
+            else if (dragTarget) {
+                const obj = objects[dragTarget.objIdx];
+                //   if (dragTarget.part === 'origin') { obj.points.forEach(pt => { pt.x += dx; pt.y += dy; if (pt.mid) { pt.mid.x += dx; pt.mid.y += dy; } }); }
+                //   else 
+                if (dragTarget.part === 'radius') { obj.radius = Math.hypot(currentPos.x - obj.points[0].x, currentPos.y - obj.points[0].y); }
+                else {
+                    let p = obj.points[dragTarget.ptIdx];
+                    if (dragTarget.part === 'mid') {
+                        p.mid.x += dx; p.mid.y += dy;
+                    } else {
+                        p.x += dx; p.y += dy;
+                        if (dragTarget.ptIdx == 0
+                            && obj.points[obj.points.length - 1].type === 'arc') {
+                            obj.points[obj.points.length - 1].x = p.x;
+                            obj.points[obj.points.length - 1].y = p.y;
+                        }
+                    }
+                }
+            } else if (isMovingSelection) {
+                objects.filter(o => o.selected).forEach(obj => { obj.points.forEach(pt => { pt.x += dx; pt.y += dy; if (pt.mid) { pt.mid.x += dx; pt.mid.y += dy; } }); });
+            } else if (selectionBox) { selectionBox.x2 = world.x; selectionBox.y2 = world.y; }
+
+            lastMouse = { ...currentPos, rawX, rawY };
+            document.getElementById('coordDisplay').innerText = `X: ${world.x.toFixed(2)} Y: ${world.y.toFixed(2)}`;
+            draw();
+        });
+
+        window.addEventListener('mouseup', () => {
+
+            dragMeasure = null;
+            dragPointType = null;
+            isDraggingBar = null;
+            if (selectionBox) {
+                const xM = Math.min(selectionBox.x1, selectionBox.x2), xX = Math.max(selectionBox.x1, selectionBox.x2);
+                const yM = Math.min(selectionBox.y1, selectionBox.y2), yX = Math.max(selectionBox.y1, selectionBox.y2);
+                objects.forEach(o => { if (o.points.some(p => p.x >= xM && p.x <= xX && p.y >= yM && p.y <= yX)) o.selected = true; });
+            }
+            dragTarget = null;
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = cursav;
+            }
+            isMovingSelection = false;
+            selectionBox = null;
+            draw();
+        });
+
+        window.addEventListener('keydown', e => {
+
+
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                printDesign();
+            }
+            const k = e.key.toLowerCase();
+            if (e.ctrlKey && k === 'z') undo();
+            if (e.ctrlKey && k === 'c') copy();
+            if (e.ctrlKey && k === 'v') paste();
+            if (k === 'delete' || k === 'backspace') deleteSelected();
+            if (k === 'a') setTool('arc');
+            if (k === 'l') setTool('line');
+            if (k === 'c') setTool('circle');
+            if (k === 'm') setTool('measure');
+            /*
+            if (k === 's' || k === '1') setTool('select');
+            if (k === 'l' || k === '2') setTool('line');
+            if (k === 'a' || k === '3') setTool('arc');
+            if (k === 'c' || k === '4') setTool('circle');
+       
+            */
+            if (k === 'escape') {
+                activeObject = null;
+                objects.forEach(o => o.selected = false);
+                setTool('select');
+                draw();
+            }
+        });
+
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const mouse = { x: e.clientX, y: e.clientY - 35 };
+            const worldBefore = toWorld(mouse.x, mouse.y);
+
+            camera.zoom *= delta;
+            // Clamp zoom
+            camera.zoom = Math.min(Math.max(0.1, camera.zoom), 10);
+
+            camera.x = mouse.x - worldBefore.x * camera.zoom;
+            camera.y = mouse.y - worldBefore.y * camera.zoom;
+            draw();
+        });
+
+        /*
+                canvas.addEventListener('wheel', e => {
+                    e.preventDefault();
+                    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+                    const mWorld = toWorld(e.clientX, e.clientY - 35);
+                    camera.zoom *= factor; camera.x = e.clientX - mWorld.x * camera.zoom; camera.y = (e.clientY - 35) - mWorld.y * camera.zoom;
+                    draw();
+                }, { passive: false });
+        */
+
+        canvas.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            if (tool === 'measure') {
+                measurePoints = [];
+                draw();
+            }
+            const world = toWorld(e.clientX, e.clientY - 35);
+            const handle = findHandle(world);
+            contextSeg = findSegmentAt(lastMouse); // findSegmentAt uses world coords
+            if (contextSeg) {
+                ctx.beginPath();
+                ctx.arc(lastMouse.x, lastMouse.y, 4 / camera.zoom, 0, Math.PI * 2);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fill();
+                addPointActions.style.display = 'block';
+            } else {
+                addPointActions.style.display = 'none';
+            }
+
+            if (handle && handle.part !== 'mid' && handle.part !== 'radius') {
+                contextPoint = handle;
+                pointActions.style.display = 'block';
+            } else {
+                contextPoint = null;
+                pointActions.style.display = 'none';
+                const hit = findObjectAt(e.clientX, e.clientY - 35);
+                if (hit && !hit.selected) {
+                    objects.forEach(o => o.selected = false);
+                    hit.selected = true;
+                }
+            }
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = e.clientX + 'px';
+            contextMenu.style.top = e.clientY + 'px';
+            draw();
+        });
+
+        function hideContext() { contextMenu.style.display = 'none'; }
+
+        function findHandle(w) {
+            const d = 10 / camera.zoom;
+            for (let i = objects.length - 1; i >= 0; i--) {
+                if (!objects[i].selected) continue;
+                const obj = objects[i];
+                for (let j = 0; j < obj.points.length; j++) {
+                    if (Math.hypot(obj.points[j].x - w.x, obj.points[j].y - w.y) < d) return { objIdx: i, ptIdx: j, part: (j === 0 ? 'origin' : 'anchor') };
+                    if (obj.points[j].mid && Math.hypot(obj.points[j].mid.x - w.x, obj.points[j].mid.y - w.y) < d) return { objIdx: i, ptIdx: j, part: 'mid' };
+                }
+                if (obj.type === 'circle' && Math.hypot((obj.points[0].x + obj.radius) - w.x, obj.points[0].y - w.y) < d) return { objIdx: i, part: 'radius' };
+            }
+            return null;
+        }
+
+        function findObjectAt(rawX, rawY) {
+            const world = toWorld(rawX, rawY);
+            let candidates = [];
+
+            // Temporary canvas context for hit testing (off-screen)
+            // We use the main ctx but don't call .stroke() or .fill() to keep it invisible
+            objects.forEach((obj, index) => {
+                ctx.beginPath();
+                if (obj.type === 'circle') {
+                    ctx.arc(obj.points[0].x, obj.points[0].y, obj.radius, 0, Math.PI * 2);
+                } else {
+                    if (!obj.points.length) return;
+                    ctx.moveTo(obj.points[0].x, obj.points[0].y);
+                    for (let i = 1; i < obj.points.length; i++) {
+                        const p = obj.points[i];
+                        if (p.type === 'arc' && p.mid) {
+                            const a = getArcParams(obj.points[i - 1], p.mid, p);
+                            if (a) ctx.arc(a.cX, a.cY, a.r, a.sA, a.eA, a.ccw);
+                            else ctx.lineTo(p.x, p.y);
+                        } else ctx.lineTo(p.x, p.y);
+                    }
+                    if (obj.isClosed) ctx.closePath();
+                }
+
+                // Check if world-space point is inside the path or near the stroke
+                // We use a threshold for the stroke so lines are easy to click
+                const isInside = ctx.isPointInPath(world.x, world.y);
+                const isOnStroke = ctx.isPointInStroke(world.x, world.y);
+
+                if (isInside || isOnStroke) {
+                    // Calculate approximate area to handle nesting
+                    let area = 0;
+                    if (obj.type === 'circle') {
+                        area = Math.PI * Math.pow(obj.radius, 2);
+                    } else {
+                        // Approximate area using bounding box for performance
+                        const xs = obj.points.map(p => p.x);
+                        const ys = obj.points.map(p => p.y);
+                        area = (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+                    }
+                    candidates.push({ obj, area });
+                }
+            });
+
+            if (candidates.length === 0) return null;
+
+            // Sort by area (ascending) so the smallest (innermost) object is first
+            candidates.sort((a, b) => a.area - b.area);
+
+            return candidates[0].obj;
+        }
+
+        function setTool(t) {
+            tool = t;
+            measurePoints = []; // Clear active measurements when switching tools
+
+            document.querySelectorAll('#toolbar button').forEach(b => b.classList.toggle('active', b.id === `tool-${t}`));
+            document.getElementById('modeDisplay').innerText = `MODE: ${t.toUpperCase()} UNITS: ${(document.getElementById('unitSelect').value === "25") ? "mm" : "inches"} SCALE: ${globalScale.toFixed(4)}x`;
+            canvas.style.cursor = (t === 'select') ? 'default' : (t === 'scaleship' ? 'help' : 'crosshair');
+            draw();
+        }
+
+        function deleteSelected() {
+            saveState();
+            if (clickedMeasurement) {
+                measurements = measurements.filter(m => m !== clickedMeasurement);
+                clickedMeasurement = null;
+                draw();
+                return;
+            }
+            objects = objects.filter(o => !o.selected);
+            draw();
+        }
+        function copy() { clipboard = JSON.parse(JSON.stringify(objects.filter(o => o.selected))); }
+        function paste() {
+            if (clipboard) {
+                saveState();
+                // deselect all
+                objects.forEach(o => {
+                    o.selected = false;
+                });
+                clipboard.forEach(o => {
+                    const n = JSON.parse(JSON.stringify(o));
+                    n.selected = true;
+                    n.points.forEach(p => { p.x += 20; p.y += 20; if (p.mid) { p.mid.x += 20; p.mid.y += 20; } });
+                    objects.push(n);
+                });
+                draw();
+            }
+        }
+
+        function adjustScale(newVal) {
+            const newScale = parseFloat(newVal);
+            if (!isNaN(newScale) && newScale > 0) {
+                const factor = newScale / globalScale;
+                const center = toWorld(canvas.width / 2, canvas.height / 2);
+                scaleAll(factor, center);
+            }
+        }
+
+        function scaleAll(factor, center) {
+            if (!factor || factor === 1 || isNaN(factor)) return;
+            saveState();
+
+            // Update the global multiplier
+            globalScale *= factor;
+            const scaleInp = document.getElementById('scaleInput');
+            if(scaleInp) scaleInp.value = globalScale.toFixed(4);
+            console.log(`Global scale updated to: ${globalScale}`);
+            objects.forEach(obj => {
+                obj.points.forEach(p => {
+                    // Scale relative to the center point to prevent "jumping"
+                    p.x = center.x + (p.x - center.x) * factor;
+                    p.y = center.y + (p.y - center.y) * factor;
+
+                    if (p.mid) {
+                        p.mid.x = center.x + (p.mid.x - center.x) * factor;
+                        p.mid.y = center.y + (p.mid.y - center.y) * factor;
+                    }
+                });
+
+                if (obj.type === 'circle') {
+                    obj.radius *= factor;
+                }
+            });
+
+            draw();
+        }
+
+        let currentFileHandle = null;
+
+        /**
+         * Save As: Always prompts the user for a filename and location.
+         */
+        async function saveProjectAs() {
+            try {
+                const options = {
+                    suggestedName: 'gasket_project.json',
+                    types: [{
+                        description: 'Gasketteer Project',
+                        accept: { 'application/json': ['.json'] },
+                    }],
+                };
+
+                const handle = await window.showSaveFilePicker(options);
+                currentFileHandle = handle;
+                await writeFile(handle);
+                alert("Project Saved As: " + handle.name);
+            } catch (err) {
+                if (err.name !== 'AbortError') console.error(err);
+            }
+        }
+
+        /**
+         * Save: Writes to the current file if it exists, otherwise triggers Save As.
+         */
+        async function saveProject() {
+            const data = {
+                objects: objects,
+                bgImageData: bgImageData,
+                brightness: document.getElementById('imgBrightness').value,
+                globalScale: globalScale,
+                unitSelect: document.getElementById('unitSelect').value,
+                snapGrid: document.getElementById('snapGrid').checked,
+                showDims: document.getElementById('showDims').checked,
+                currentUnitValue: currentUnitValue,
+                measurements: measurements,
+                version: "1.1"
+            };
+
+            const jdat = JSON.stringify(data, null, 2);
+
+            // 1. Try Modern API (allows Overwrite)
+            if ('showSaveFilePicker' in window) {
+                try {
+                    // If we already have a handle, we might still want to prompt 
+                    // or just write. showSaveFilePicker always prompts for location.
+                    const handle = currentFileHandle || await window.showSaveFilePicker({
+                        suggestedName: 'my_gasket.json',
+                        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+                    });
+
+                    writeFile(handle);
+                    currentFileHandle = handle;
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            // 2. Fallback (Always creates a new download)
+            const blob = new Blob([jdat], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = currentFileHandle ? currentFileHandle.name : 'gasket_project.json';
+            a.click();
+        }
+
+        /**
+         * Internal helper to write the JSON data to the file handle
+         */
+        async function writeFile(fileHandle) {
+            const data = {
+                objects: objects,
+                bgImageData: bgImageData,
+                brightness: document.getElementById('imgBrightness').value,
+                globalScale: globalScale,
+                unitSelect: document.getElementById('unitSelect').value,
+                snapGrid: document.getElementById('snapGrid').checked,
+                showDims: document.getElementById('showDims').checked,
+                currentUnitValue: currentUnitValue,
+                measurements: measurements,
+                version: "1.1"
+            };
+
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(data, null, 2));
+            await writable.close();
+        }
+
+        /**
+         * Updated Load: Stores the file handle so "Save" works immediately after opening.
+         */
+        async function loadProject() {
+            // 1. Try the Modern API (Chrome/Edge/HTTPS)
+            if ('showOpenFilePicker' in window) {
+                try {
+                    const [handle] = await window.showOpenFilePicker({
+                        types: [{
+                            description: 'Gasketteer Project',
+                            accept: { 'application/json': ['.json'] }
+                        }],
+                        multiple: false
+                    });
+                    currentFileHandle = handle;
+                    const file = await handle.getFile();
+                    const content = await file.text();
+                    processLoadData(content);
+                    alert(`Opened: ${handle.name}`);
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                    console.error("Modern Picker failed, falling back...", err);
+                }
+            }
+
+            // 2. Fallback for Firefox/Safari/Local Files
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => processLoadData(event.target.result);
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Helper to actually apply the data to the app
+        function processLoadData(jsonString) {
+            newProject(); // Clear existing data
+            const state = JSON.parse(jsonString);
+            objects = state.objects || [];
+            globalScale = state.globalScale || 1.0;
+            const scaleInp = document.getElementById('scaleInput');
+            if(scaleInp) scaleInp.value = globalScale.toFixed(4);
+
+            // 1. Restore core data
+            objects = state.objects || [];
+            globalScale = state.globalScale || 1.0;
+            measurements = state.measurements || [];
+
+            // 2. Restore background image
+            if (state.bgImageData) {
+                bgImageData = state.bgImageData;
+                restoreImage(bgImageData);
+            } else {
+                bgImage = null;
+                bgImageData = null;
+            }
+
+            // 3. Restore UI Settings
+            if (state.brightness) document.getElementById('imgBrightness').value = state.brightness;
+            if (state.unitSelect) document.getElementById('unitSelect').value = state.unitSelect;
+            if (state.snapGrid !== undefined) document.getElementById('snapGrid').checked = state.snapGrid;
+            if (state.showDims !== undefined) document.getElementById('showDims').checked = state.showDims;
+            if (state.currentUnitValue !== undefined) {
+                document.getElementById('unitSelect').value = state.currentUnitValue;
+                currentUnitValue = state.currentUnitValue;
+            }
+
+            // 4. Update window references for the Tester
+            window.objects = objects;
+            window.globalScale = globalScale;
+
+            saveState(); // Record in undo history
+            setTool('select');
+            draw();
+        }
+        function loadProjectOk(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const state = JSON.parse(ev.target.result);
+
+                    // 1. Restore core data
+                    objects = state.objects || [];
+                    globalScale = state.globalScale || 1.0;
+                    const scaleInp = document.getElementById('scaleInput');
+                    if(scaleInp) scaleInp.value = globalScale.toFixed(4);
+
+                    // 2. Restore background image
+                    if (state.bgImageData) {
+                        bgImageData = state.bgImageData;
+                        restoreImage(bgImageData);
+                    } else {
+                        bgImage = null;
+                        bgImageData = null;
+                    }
+
+                    // 3. Restore UI Settings
+                    if (state.brightness) document.getElementById('imgBrightness').value = state.brightness;
+                    if (state.unitSelect) document.getElementById('unitSelect').value = state.unitSelect;
+                    if (state.snapGrid !== undefined) document.getElementById('snapGrid').checked = state.snapGrid;
+                    if (state.showDims !== undefined) document.getElementById('showDims').checked = state.showDims;
+
+                    // 4. Update window references for the Tester
+                    window.objects = objects;
+                    window.globalScale = globalScale;
+
+                    saveState(); // Record in undo history
+                    draw();      // Refresh canvas
+                    alert("Project loaded successfully.");
+                } catch (err) {
+                    console.error("Load Error:", err);
+                    alert("Failed to load project file. The file may be corrupted.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+
+
+        function exportSVG() {
+            if (objects.length === 0) {
+                alert("Nothing to export!");
+                return;
+            }
+
+            // 1. Determine Conversion Factors
+            // unitSize is pixels per grid unit (25 or 32).
+            // globalScale is the calibration multiplier.
+            const unitSize = parseInt(document.getElementById('unitSelect').value);
+            const isMetric = (unitSize === 25);
+            const unitLabel = isMetric ? "mm" : "in";
+
+            // Scale Factor: Converts Internal Pixels -> Physical Units
+            // Formula derived from your getRealValue() logic
+            const scale = globalScale / unitSize;
+
+            // 2. Calculate Bounding Box (in Internal Pixels)
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            objects.forEach(obj => {
+                if (obj.type === 'circle') {
+                    minX = Math.min(minX, obj.points[0].x - obj.radius);
+                    maxX = Math.max(maxX, obj.points[0].x + obj.radius);
+                    minY = Math.min(minY, obj.points[0].y - obj.radius);
+                    maxY = Math.max(maxY, obj.points[0].y + obj.radius);
+                } else {
+                    obj.points.forEach(p => {
+                        minX = Math.min(minX, p.x);
+                        maxX = Math.max(maxX, p.x);
+                        minY = Math.min(minY, p.y);
+                        maxY = Math.max(maxY, p.y);
+                    });
+                }
+            });
+
+            // Add a small padding (margin) to prevent clipping stroke edges
+            // 5 pixels internal padding
+            const padding = 5;
+            minX -= padding; minY -= padding;
+            maxX += padding; maxY += padding;
+
+            const widthPx = maxX - minX;
+            const heightPx = maxY - minY;
+
+            // 3. Convert Dimensions to Physical Units string
+            const physWidth = (widthPx * scale).toFixed(4);
+            const physHeight = (heightPx * scale).toFixed(4);
+
+            // 4. Helper to transform coordinates
+            // Shifts points to (0,0) based on bounding box, then scales to physical units
+            const tx = (val) => ((val - minX) * scale).toFixed(4);
+            const ty = (val) => ((val - minY) * scale).toFixed(4);
+            const tr = (val) => (val * scale).toFixed(4); // For Radius (scaling only, no offset)
+
+            // 5. Build SVG String
+            // viewBox is in physical units. width/height sets the metadata.
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" 
+        width="${physWidth}${unitLabel}" 
+        height="${physHeight}${unitLabel}" 
+        viewBox="0 0 ${physWidth} ${physHeight}">
+        `;
+
+            objects.forEach(obj => {
+                // Style: Black stroke, very thin line (hairline) for cutting
+                // vector-effect="non-scaling-stroke" ensures it stays thin if zoomed
+                const style = `fill="none" stroke="black" stroke-width="${isMetric ? '0.1' : '0.004'}"`;
+
+                if (obj.type === 'circle') {
+                    const c = obj.points[0];
+                    svg += `<circle cx="${tx(c.x)}" cy="${ty(c.y)}" r="${tr(obj.radius)}" ${style} />`;
+                } else {
+                    let d = `M ${tx(obj.points[0].x)} ${ty(obj.points[0].y)} `;
+
+                    for (let i = 1; i < obj.points.length; i++) {
+                        const p = obj.points[i];
+                        const prev = obj.points[i - 1];
+
+                        if (p.type === 'arc' && p.mid) {
+                            const a = getArcParams(prev, p.mid, p);
+                            if (a) {
+                                // SVG Arc Command: A rx ry x-axis-rot large-arc-flag sweep-flag x y
+                                // We must calculate the flags.
+                                const r = tr(a.r);
+
+                                // Sweep Flag: 1 if positive angle direction, 0 otherwise.
+                                // Since SVG Y is down, standard math CCW is actually visually correct here.
+                                // However, getArcParams returns 'ccw' boolean relative to screen.
+                                // SVG sweep-flag=0 is "counter-clockwise" in a Y-down system? 
+                                // Actually: 0 = "negative angle", 1 = "positive angle".
+                                // Let's trust the calculation: if a.ccw is true, sweep is 0.
+                                const sweep = a.ccw ? 0 : 1;
+
+                                // Large Arc Flag: 1 if the arc spans > 180 degrees
+                                let angleDiff = a.eA - a.sA;
+                                if (a.ccw) {
+                                    if (angleDiff > 0) angleDiff -= 2 * Math.PI;
+                                } else {
+                                    if (angleDiff < 0) angleDiff += 2 * Math.PI;
+                                }
+                                const large = Math.abs(angleDiff) > Math.PI ? 1 : 0;
+
+                                d += `A ${r} ${r} 0 ${large} ${sweep} ${tx(p.x)} ${ty(p.y)} `;
+                            } else {
+                                // Fallback to line if arc calc fails
+                                d += `L ${tx(p.x)} ${ty(p.y)} `;
+                            }
+                        } else {
+                            d += `L ${tx(p.x)} ${ty(p.y)} `;
+                        }
+                    }
+
+                    if (obj.isClosed) d += 'Z';
+                    svg += `<path d="${d}" ${style} />`;
+                }
+            });
+
+            svg += '</svg>';
+
+            // 6. Download File
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'gasket_export.svg';
+            a.click();
+        }
+
+
+        function exportPNG() {
+            const a = document.createElement('a'); a.download = 'render.png'; a.href = canvas.toDataURL(); a.click();
+        }
+
+
+        function exportGCode() {
+            if (objects.length === 0) {
+                alert("No objects to export!");
+                return;
+            }
+
+            // 1. Correct Scaling Logic
+            // unitSize is pixels per unit (e.g., 25px for 1mm). 
+            // globalScale is your calibration multiplier.
+            const unitSize = parseInt(document.getElementById('unitSelect').value);
+            const pixelsPerUnit = unitSize / globalScale;
+            const scale = 1 / pixelsPerUnit;
+
+            let gcode = [];
+
+            // Header
+            gcode.push("(Generated by Gasketteer)");
+            gcode.push("G21 (Units: Metric)");
+            gcode.push("G90 (Absolute Positioning)");
+            gcode.push("G0 Z5 (Safe Height)");
+
+            objects.forEach((obj, index) => {
+                gcode.push(`(Object ${index + 1}: ${obj.type})`);
+
+                if (obj.type === 'circle') {
+                    const center = obj.points[0];
+                    // Start at the 3 o'clock position
+                    const startX = (center.x + obj.radius) * scale;
+                    const startY = -(center.y * scale); // Invert Y for CNC coordinates
+
+                    const centerX = center.x * scale;
+                    const centerY = -(center.y * scale);
+
+                    gcode.push(`G0 X${startX.toFixed(3)} Y${startY.toFixed(3)}`);
+                    gcode.push("G1 Z-1 F500");
+
+                    // I is the X-offset from start point to center
+                    const iOff = (centerX - startX).toFixed(3);
+                    const jOff = (centerY - startY).toFixed(3);
+
+                    // Circles in G-code standard are typically G2 (CW)
+                    gcode.push(`G2 X${startX.toFixed(3)} Y${startY.toFixed(3)} I${iOff} J${jOff} F800`);
+                    gcode.push("G0 Z5");
+
+                } else if (obj.points.length > 0) {
+                    const start = obj.points[0];
+                    gcode.push(`G0 X${(start.x * scale).toFixed(3)} Y${(-(start.y * scale)).toFixed(3)}`);
+                    gcode.push("G1 Z-1 F500");
+
+                    for (let i = 1; i < obj.points.length; i++) {
+                        const p = obj.points[i];
+                        const prev = obj.points[i - 1];
+
+                        if (p.type === 'arc' && p.mid) {
+                            const a = getArcParams(prev, p.mid, p);
+                            if (a) {
+                                // 2. Fixed Arc Direction: 
+                                // Because we inverted the Y axis, the CCW logic from the canvas must be flipped.
+                                // If canvas was CCW (a.ccw = true), CNC should be G2 (CW).
+                                const cmd = a.ccw ? "G3" : "G2";
+
+                                const targetX = (p.x * scale).toFixed(3);
+                                const targetY = (-(p.y * scale)).toFixed(3);
+
+                                // I and J are incremental offsets from PREVIOUS point to CENTER
+                                const iOff = ((a.cX - prev.x) * scale).toFixed(3);
+                                const jOff = ((-(a.cY) - (-(prev.y))) * scale).toFixed(3);
+
+                                gcode.push(`${cmd} X${targetX} Y${targetY} I${iOff} J${jOff} F800`);
+                            } else {
+                                gcode.push(`G1 X${(p.x * scale).toFixed(3)} Y${(-(p.y * scale)).toFixed(3)} F800`);
+                            }
+                        } else {
+                            gcode.push(`G1 X${(p.x * scale).toFixed(3)} Y${(-(p.y * scale)).toFixed(3)} F800`);
+                        }
+                    }
+
+                    if (obj.isClosed) {
+                        const p = obj.points[0];
+                        gcode.push(`G1 X${(p.x * scale).toFixed(3)} Y${(-(p.y * scale)).toFixed(3)} F800`);
+                    }
+                    gcode.push("G0 Z5");
+                }
+            });
+
+            gcode.push("G0 X0 Y0");
+            gcode.push("M30");
+
+            const blob = new Blob([gcode.join('\n')], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'gasket_export.nc';
+            a.click();
+        }
+
+        function exportHPGL() {
+            if (objects.length === 0) {
+                alert("No objects to export!");
+                return;
+            }
+
+            const unitSize = parseInt(document.getElementById('unitSelect').value);
+            const isMetric = unitSize === 25; // Check if user is using mm or inches
+
+            // 1. Calculate Pixels Per Unit (calibration)
+            const pixelsPerUnit = unitSize / globalScale;
+
+            // 2. Define HPGL Standard: 1016 units per inch (or 40 per mm)
+            const hpglUnitsPerInch = 1016;
+            const hpglUnitsPerMm = 40;
+
+            // 3. Final Multiplier: (1 / pixels) * plotter_units
+            const scale = isMetric ? (hpglUnitsPerMm / pixelsPerUnit) : (hpglUnitsPerInch / pixelsPerUnit);
+
+            let hpgl = ["IN;SP1;"];
+
+            // Find the bounding box to move everything into the positive quadrant
+            // This prevents the "nothing shows up" issue caused by negative coordinates
+            let minX = Infinity, maxY = -Infinity;
+            objects.forEach(obj => {
+                obj.points.forEach(p => {
+                    minX = Math.min(minX, p.x);
+                    maxY = Math.max(maxY, p.y);
+                });
+            });
+
+            objects.forEach((obj) => {
+                // Apply offset so the top-left of the design is at the plotter's 0,0
+                const getX = (val) => Math.round((val - minX) * scale);
+                const getY = (val) => Math.round((maxY - val) * scale); // Invert and offset
+
+                if (obj.type === 'circle') {
+                    const center = obj.points[0];
+                    hpgl.push(`PU${getX(center.x)},${getY(center.y)};`);
+                    hpgl.push(`CI${Math.round(obj.radius * scale)};`);
+                } else {
+                    const start = obj.points[0];
+                    hpgl.push(`PU${getX(start.x)},${getY(start.y)};PD;`);
+
+                    for (let i = 1; i < obj.points.length; i++) {
+                        const p = obj.points[i];
+                        const prev = obj.points[i - 1];
+
+                        if (p.type === 'arc' && p.mid) {
+                            const a = getArcParams(prev, p.mid, p);
+                            if (a) {
+                                const cx = getX(a.cX);
+                                const cy = getY(a.cY);
+
+                                // Angles in HPGL are calculated in degrees
+                                // We use your fix (sA - eA) to account for the Y-axis inversion
+                                let sA = Math.atan2(getY(prev.y) - cy, getX(prev.x) - cx) * (180 / Math.PI);
+                                let eA = Math.atan2(getY(p.y) - cy, getX(p.x) - cx) * (180 / Math.PI);
+
+                                // YOUR FIX: The direction of subtraction determines CW vs CCW
+                                let sweep = sA - eA;
+
+                                // Normalization: Ensure the sweep doesn't exceed 360 or flip unintentionally
+                                // If the canvas arc was CCW, ensure sweep is positive; if CW, ensure negative
+                                if (a.ccw) {
+                                    while (sweep <= 0) sweep += 360;
+                                } else {
+                                    while (sweep >= 0) sweep -= 360;
+                                }
+
+                                hpgl.push(`AA${cx},${cy},${sweep.toFixed(2)};`);
+                            }
+                        } else {
+                            hpgl.push(`PD${getX(p.x)},${getY(p.y)};`);
+                        }
+                    }
+                    if (obj.isClosed) hpgl.push(`PD${getX(start.x)},${getY(start.y)};`);
+                    hpgl.push("PU;");
+                }
+            });
+
+            hpgl.push("PU0,0;IN;");
+
+            // Download logic...
+            const blob = new Blob([hpgl.join("")], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'gasket_final.plt';
+            a.click();
+        }
+
+
+        let dimsSave = null;
+        function printDesign() {
+            if (objects.length === 0) {
+                alert("Canvas is empty!");
+                return;
+            }
+
+            isPrinting = true;
+
+            // 1. Save current state to restore later
+            const originalState = {
+                width: canvas.width,
+                height: canvas.height,
+                camera: { ...camera },
+                bgImage: bgImage,
+                dims: document.getElementById('showDims').checked
+            };
+
+            // 2. Hide background and dims (optional, usually you don't want dims on the template)
+            bgImage = null;
+            // Uncomment next line if you want to hide text dimensions while printing
+            // document.getElementById('showDims').checked = false;
+
+            // 3. Calculate the Bounding Box of all objects
+            // We need to know exactly how big the drawing is to size the canvas
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            objects.forEach(obj => {
+                if (obj.type === 'circle') {
+                    minX = Math.min(minX, obj.points[0].x - obj.radius);
+                    maxX = Math.max(maxX, obj.points[0].x + obj.radius);
+                    minY = Math.min(minY, obj.points[0].y - obj.radius);
+                    maxY = Math.max(maxY, obj.points[0].y + obj.radius);
+                } else {
+                    obj.points.forEach(p => {
+                        minX = Math.min(minX, p.x);
+                        maxX = Math.max(maxX, p.x);
+                        minY = Math.min(minY, p.y);
+                        maxY = Math.max(maxY, p.y);
+                    });
+                }
+            });
+
+            // Add a small padding (e.g., 10mm) to the bounding box
+            const paddingVal = 30;
+
+            // 4. Calculate Print Zoom (The 1:1 Scale Logic)
+            // Standard Web Print DPI is 96 PX = 1 Inch
+            const DPI = 96;
+            const unitSize = parseInt(document.getElementById('unitSelect').value);
+
+            let printZoom;
+
+            if (unitSize === 32) {
+                // INCH MODE:
+                // Input: 32px (unit base) = 1 Inch
+                // Output: 96px (DPI) = 1 Inch
+                // Formula: (Target DPI / Source Px) / Calibration
+                printZoom = (DPI / 32) * globalScale;
+            } else {
+                // METRIC MODE:
+                // Input: 25px (unit base) = 1 mm
+                // Output: 1mm = (96 / 25.4) pixels = ~3.7795 px
+                const pxPerMm = DPI / 25.4;
+                printZoom = (pxPerMm / 25) * globalScale;
+            }
+
+            // 5. Resize Canvas to fit the drawing exactly at 1:1 scale
+            const drawWidth = (maxX - minX);
+            const drawHeight = (maxY - minY);
+
+            // Set actual pixel dimensions of the canvas
+            canvas.width = (drawWidth * printZoom) + (paddingVal * 2);
+            canvas.height = (drawHeight * printZoom) + (paddingVal * 2);
+
+            // 6. Move Camera to focus on the bounding box (Top-Left alignment)
+            // We set camera.x/y such that (minX, minY) maps to (padding, padding)
+            camera.zoom = printZoom;
+            camera.x = paddingVal - (minX * printZoom);
+            camera.y = paddingVal - (minY * printZoom);
+
+            // 7. Draw and Print
+            draw();
+
+            // Use a slight timeout to allow the DOM to update the canvas size
+            setTimeout(() => {
+                window.print();
+
+                // 8. Restore Original State
+                canvas.width = originalState.width;
+                canvas.height = originalState.height;
+                camera = originalState.camera;
+                bgImage = originalState.bgImage;
+                document.getElementById('showDims').checked = originalState.dims;
+                isPrinting = false;
+                draw();
+            }, 500);
+        }
+
+        init();
+        // Add this at the very end of your script block
+        window.setTool = setTool;
+        window.objects = objects;
+        window.undo = undo;
+        window.scaleAll = scaleAll;
+
+        // Keep the global variables updated on the window object
+        setInterval(() => {
+            window.objects = objects;
+            window.globalScale = globalScale;
+        }, 100);
+
+/**
+     * Chaikin's Algorithm for path smoothing
+     * @param {Array} points - Array of {x, y} objects
+     * @param {number} iterations - How many times to smooth
+     */
+    function chaikinSmooth(points, iterations = 1) {
+        if (points.length < 3) return points;
+
+        let smoothed = [];
+        // For closed loops, we treat the end as connected to the start
+        // but for standard paths, we usually keep the endpoints fixed
+        
+        for (let i = 0; i < iterations; i++) {
+            smoothed = [];
+            // Keep the first point
+            smoothed.push(points[0]);
+
+            for (let j = 0; j < points.length - 1; j++) {
+                const p0 = points[j];
+                const p1 = points[j + 1];
+
+                // Create two new points at 25% and 75% of the segment length
+                const q = {
+                    x: 0.75 * p0.x + 0.25 * p1.x,
+                    y: 0.75 * p0.y + 0.25 * p1.y
+                };
+                const r = {
+                    x: 0.25 * p0.x + 0.75 * p1.x,
+                    y: 0.25 * p0.y + 0.75 * p1.y
+                };
+
+                smoothed.push(q, r);
+            }
+
+            // Keep the last point
+            smoothed.push(points[points.length - 1]);
+            points = smoothed;
+        }
+        return smoothed;
+    }
+
+    /**
+     * UI Trigger to smooth the currently selected object
+     */
+    function smoothSelected() {
+        // Find the selected object (assuming objects have a .selected property)
+        const selectedObj = objects.find(obj => obj.selected);
+
+        if (selectedObj && selectedObj.points && selectedObj.type !== 'circle') {
+            saveState(); // Ensure undo works
+            selectedObj.points = chaikinSmooth(selectedObj.points, 1);
+            draw();
+        } else {
+            console.warn("No valid polyline selected to smooth.");
+        }
+    }
+
+    </script>
+</body>
+
+</html>
